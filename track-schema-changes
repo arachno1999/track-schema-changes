@@ -1,0 +1,53 @@
+#!/bin/bash
+#DOC VERSION 0.5
+#DOC AUTHOR roland.schopp@arachno.de
+#DOC DESC track schema changes of mysql/mariadb database in existing git repository and inform configured mailgroup of changes
+
+#PREREQUISITES
+#mysql must be in PATH
+#default config.tsc file config.tsc must be present in same dir where script is located
+#/PREREQUISITES
+
+#FUNCTIONS
+#DOC FUNCTION show message with severity. If secerity equals "ABORT" return 1. ERROR+ABORT throw slackmessage
+msg() { #DOC RESERVED
+
+        local severity="$1"
+        shift
+	local rc=0
+
+	[ -t 1 ] && echo "$severity:$0:$@" >/dev/tty
+        echo -e "$severity:$(date):$0:$@" >>/var/log/messages.backend.$USER
+        echo -e "$severity:$(date):$0:$@" >&2
+        [ "$severity" = "ERROR" ] || rc=$?
+	if [ $rc -eq 0 ]; then
+		slackmessage "$@"
+	fi
+        rc=0; [ "$severity" = "ABORT" ] || rc=$?
+	if [ $rc -eq 0 ]; then
+		[ -n "${lockfile:-}" ] && rm $lockfile
+		slackmessage "$@"
+		rm -f /var/run/runcontrol_$(basename $0).$$
+		exit 1
+	else
+        	return 0
+	fi
+}
+#/FUNCTIONS
+
+cd $(dirname $0)
+
+configfile="config.tsc"
+[ $# -gt 0 ] && configfile=$1
+
+[ -f $configfile ] || msg ABORT config file $configfile found
+which mysql >/dev/null 2>&1 || msg ABORT command mysql not found
+
+. $configfile
+
+tmpdir=/tmp/$conf_db.$$
+mkdir -p $tmpdir || msg ABORT could not create dir $tmpdir
+cd $tmpdir
+git clone $conf_repo
+
+#mysql
