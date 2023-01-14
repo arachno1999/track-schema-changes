@@ -1,0 +1,17 @@
+version: '2'
+
+services:
+  mariadbtsc:
+    container_name: mariadbtsc
+    hostname: mariadbtsc
+    image: docker.io/bitnami/mariadb:10.6
+    ports:
+      - '3307:3306'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=no
+      - MARIADB_USER=dea_admin
+      - MARIADB_PASSWORD=asdAsD3SdSd
+      - MARIADB_ROOT_PASSWORD=asdAsD3SdSd
+      - MARIADB_DATABASE=deakron
+    volumes:
+      - '/Users/rolands/DB/tsc:/bitnami/mariadb'

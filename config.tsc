@@ -1,10 +1,11 @@
 #DOC VERSION 1.0
 conf_db_host=localhost
-conf_db=5ht
-conf_db_port=3306
-conf_db_user=root
-conf_db_password=password
-conf_repo=repo
+conf_db=deakron
+conf_db_port=3307
+conf_db_protocol=tcp
+conf_db_user=dea_admin
+conf_db_password=asdAsD3SdSd
+conf_repo=git@github.com:arachno1999/track-schema-changes.git
 conf_repo_filename=db/schema.sql
 conf_signal_template=arachno
 conf_signal_message=schemachange

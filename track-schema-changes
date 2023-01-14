@@ -1,4 +1,5 @@
 #!/bin/bash
+$DEBUG
 #DOC VERSION 0.5
 #DOC AUTHOR roland.schopp@arachno.de
 #DOC DESC track schema changes of mysql/mariadb database in existing git repository and inform configured mailgroup of changes
@@ -35,19 +36,54 @@ msg() { #DOC RESERVED
 }
 #/FUNCTIONS
 
+#DOC STEP10 change dir to home of script file
 cd $(dirname $0)
 
+#DOC STEP15 set default config if not set with first arg
 configfile="config.tsc"
 [ $# -gt 0 ] && configfile=$1
 
+#DOCH STEP20 check existence of config file and mysql command
 [ -f $configfile ] || msg ABORT config file $configfile found
 which mysql >/dev/null 2>&1 || msg ABORT command mysql not found
 
+#DOC STEP22 source config file
 . $configfile
 
+#DOC STEP25 create tmpdir for saving files and repository
 tmpdir=/tmp/$conf_db.$$
 mkdir -p $tmpdir || msg ABORT could not create dir $tmpdir
 cd $tmpdir
+
+#DOC STEP28 save schema
+mysqldump --user=$conf_db_user --password=$conf_db_password --host=$conf_db_host --port=$conf_db_port --protocol=$conf_db_protocol --no-data --routines $conf_db | grep -v "^-- Dump completed on " >schema.sql
+
+#DOC STEP30 check out repository
 git clone $conf_repo
 
-#mysql
+#DOC STEP32 create empty file for comparison if schema file not yet present
+gitdir=$tmpdir/$(basename $conf_repo .git)
+comment=""
+if [ ! -s $gitdir/$conf_repo_filename ]; then
+  mkdir -p $gitdir/$(dirname $conf_repo_filename)
+  touch $gitdir/$conf_repo_filename
+  cd $gitdir
+  git add $conf_repo_filename
+  comment="added new file $conf_repo_filename; "
+  cd ..
+fi
+
+#DOC STEP35 if diffs detected commit and push them to git
+diff schema.sql $gitdir/$conf_repo_filename >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+  cat schema.sql >$gitdir/$conf_repo_filename
+  cd $gitdir
+  git commit -am "${comment}Detected change in database schema by $0"
+  remote=$(grep "^\[remote" $gitdir/.git/config | cut -d\" -f2)
+  branch=$(grep "^\[branch" $gitdir/.git/config | cut -d\" -f2)
+  git push $remote $branch
+  cd ..
+  echo "schema changes commited and pushed to $branch"
+else
+  echo "no schema changes detected"
+fi
