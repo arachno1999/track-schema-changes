@@ -13,22 +13,16 @@ $DEBUG
 #DOC FUNCTION show message with severity. If secerity equals "ABORT" return 1. ERROR+ABORT throw slackmessage
 msg() { #DOC RESERVED
 
-        local severity="$1"
-        shift
+  local severity="$1"
+  shift
 	local rc=0
 
 	[ -t 1 ] && echo "$severity:$0:$@" >/dev/tty
-        echo -e "$severity:$(date):$0:$@" >>/var/log/messages.backend.$USER
-        echo -e "$severity:$(date):$0:$@" >&2
-        [ "$severity" = "ERROR" ] || rc=$?
-	if [ $rc -eq 0 ]; then
-		slackmessage "$@"
-	fi
-        rc=0; [ "$severity" = "ABORT" ] || rc=$?
+  echo -e "$severity:$(date):$0:$@" >&2
+  [ "$severity" = "ERROR" ] || rc=$?
+  rc=0; [ "$severity" = "ABORT" ] || rc=$?
 	if [ $rc -eq 0 ]; then
 		[ -n "${lockfile:-}" ] && rm $lockfile
-		slackmessage "$@"
-		rm -f /var/run/runcontrol_$(basename $0).$$
 		exit 1
 	else
         	return 0

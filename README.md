@@ -1,2 +1,11 @@
 # track-schema-changes
-detect schema changes in db, save changes in git, inform mailgroup
+
+### Bash shell script with minimal dependencies
+
+- detect schema changes in db - IMPLEMENTED
+- save changes in git - IMPLEMENTED
+- inform mailgroup - TODO
+
+## Dependencies
+- git command
+- mysqldump command
